@@ -19,6 +19,10 @@ public class EnvironmentConstants {
 	public static final String DB_USERNAME = CryptoUtil.decrypt(System.getenv("DB_USERNAME"));
 
 	public static final String DB_PASSWORD = CryptoUtil.decrypt(System.getenv("DB_PASSWORD"));
+	
+	public static final Integer CONNECTION_TIMEOUT = Integer.valueOf(System.getenv("CONNECT_TIMEOUT"));
+
+	public static final Integer READ_TIMEOUT = Integer.valueOf(System.getenv("READ_TIMEOUT"));
 
 	// Mail environment constants
 

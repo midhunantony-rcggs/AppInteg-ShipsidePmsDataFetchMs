@@ -5,6 +5,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.UUID;
 
+import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,8 +30,8 @@ public class PmsDataFetchController {
 	@Autowired
 	PmsDataFetchService pmsDataFetchService;
 
-	@Autowired
-	private KafkaTemplate<Object, Object> template;
+//	@Autowired
+//	private KafkaTemplate<Object, Object> template;
 
 	private final Logger log = LoggerFactory.getLogger(PmsDataFetchController.class);
 
@@ -42,16 +43,16 @@ public class PmsDataFetchController {
 			String messageIdentifier = UUID.randomUUID().toString()
 					+ new SimpleDateFormat("yyyyMMddHHmmssSSS").format(new Date());
 			
-			AuditLog auditLog = new AuditLog("PMS Data Fetch", "folioTx", "bookingTx", 0,
-					new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ").format(new Date()), "INFO",
-					"Data recieved from IBS.", "Controller", messageIdentifier);
-			this.template.send(Constants.AUDIT_LOG_TOPIC, auditLog);
+//			AuditLog auditLog = new AuditLog("PMS Data Fetch", "folioTx", "bookingTx", 0,
+//					new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ").format(new Date()), "INFO",
+//					"Data recieved from IBS.", "Controller", messageIdentifier);
+//			this.template.send(Constants.AUDIT_LOG_TOPIC, auditLog);
 			
 			PMSDataRequest request = new PMSDataRequest(data, messageIdentifier);
 			pmsDataFetchService.fetchDataFromPms(request);
 		}
 		log.info("END controller getGuestDetail::");
-		return new StatusResponse("A", "Success");
+		return new StatusResponse("A", "Success",HttpStatus.SC_OK,null);
 
 	}
 
