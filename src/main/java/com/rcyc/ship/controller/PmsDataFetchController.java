@@ -37,8 +37,9 @@ public class PmsDataFetchController {
 
 	@PostMapping(value = "/sendData", consumes = { MediaType.APPLICATION_XML_VALUE, MediaType.TEXT_PLAIN_VALUE,
 			MediaType.TEXT_XML_VALUE })
-	public StatusResponse getGuestDetail(@RequestBody String data) throws Exception {
+	public StatusResponse getGuestDetail(@RequestBody String data) {
 		log.info("Start controller getGuestDetail::");
+		try {
 		if (data != null && !data.equals("")) {
 			String messageIdentifier = UUID.randomUUID().toString()
 					+ new SimpleDateFormat("yyyyMMddHHmmssSSS").format(new Date());
@@ -52,8 +53,12 @@ public class PmsDataFetchController {
 			pmsDataFetchService.fetchDataFromPms(request);
 		}
 		log.info("END controller getGuestDetail::");
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
 		return new StatusResponse("A", "Success",HttpStatus.SC_OK,null);
 
 	}
+
 
 }

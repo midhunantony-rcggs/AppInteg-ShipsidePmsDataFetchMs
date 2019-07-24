@@ -44,13 +44,9 @@ public class DatabaseConfiguration {
 	public DataSource dataSource() {
 		BasicDataSource dataSource = new BasicDataSource();
 		dataSource.setDriverClassName(databaseDriver);
-//		dataSource.setUrl(EnvironmentConstants.DB_URL);
-//		dataSource.setUsername(EnvironmentConstants.DB_USERNAME);
-//		dataSource.setPassword(EnvironmentConstants.DB_PASSWORD);
-		
-		dataSource.setUrl("jdbc:mysql://localhost:3306/PmsData");
-	       dataSource.setUsername("root");
-	       dataSource.setPassword("root");
+		dataSource.setUrl(EnvironmentConstants.DB_URL);
+		dataSource.setUsername(EnvironmentConstants.DB_USERNAME);
+		dataSource.setPassword(EnvironmentConstants.DB_PASSWORD);
 		return dataSource;
 	}
 	
