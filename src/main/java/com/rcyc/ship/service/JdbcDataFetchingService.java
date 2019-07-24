@@ -61,4 +61,19 @@ public class JdbcDataFetchingService {
 			}
 		return diningDetailsModelList;
 	}
+	
+	public boolean updatePmsDataWithMsgId(String msgId,Integer id) {
+		try {
+			log.info("Start updatePmsDataWithMsgId::");
+			SimpleDateFormat normalDateFormat = new SimpleDateFormat(Constants.DATE_TIME_PATTERN_FROM_DB);
+			int status = jdbcTemplate.update(SqlQueries.updatePmsDataWithMsgId, msgId,id);
+			log.info("End updatePmsDataWithMsgId::");
+			return status == 1 ? true : false;
+		} catch (Exception e) {
+			e.printStackTrace();
+			log.info("Error updatePmsDataWithMsgId::");
+			return false;
+		}
+	}
+	
 }

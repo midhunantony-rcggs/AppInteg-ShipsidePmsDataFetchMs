@@ -114,7 +114,7 @@ public class PmsDataFetchServiceImpl implements PmsDataFetchService {
 //
 //		}
 //	}
-	
+
 	@Override
 	public void fetchDataFromPms(PMSDataRequest request) throws Exception {
 		System.out.println("request.getData()::");
@@ -142,16 +142,24 @@ public class PmsDataFetchServiceImpl implements PmsDataFetchService {
 				if (startDateSwapList != null && startDateSwapList.size() > 0) {
 					startDateSwapObj = startDateSwapList.get(0);
 				}
-				if (startDateSwapObj.getId()>0) {
+				if (startDateSwapObj.getId() > 0) {
 					log.info("IFF");
 					String messageIdentifier = UUID.randomUUID().toString()
 							+ new SimpleDateFormat("yyyyMMddHHmmssSSS").format(new Date());
 					List<PmsDataModel> bulkDataList = jdbcDataFetchingService
 							.findLatestBulkDatas(startDateSwapObj.getId());
 					log.info(Integer.toString(startDateSwapObj.getId()));
-					for(PmsDataModel pmsDataModelObj:bulkDataList) {
+					for (PmsDataModel pmsDataModelObj : bulkDataList) {
+						status = jdbcDataFetchingService.updatePmsDataWithMsgId(messageIdentifier,
+								pmsDataModelObj.getId());
 						log.info(pmsDataModelObj.getData());
-						vmWareConnection.sendRequestToVmWare("api/sendRequestToVmWare", pmsDataModelObj.getData(),messageIdentifier);
+						if (status) {
+							vmWareConnection.sendRequestToVmWare("api/sendRequestToVmWare", pmsDataModelObj.getData(),
+									messageIdentifier);
+						} else {
+							throw new GeneralException(ExceptionMessages.PMS_DATA_MSG_ID_UPDATEFAILURE, 478);
+						}
+
 					}
 				}
 
