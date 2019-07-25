@@ -45,6 +45,30 @@ public class VMWareConnection {
 		log.debug("VMWareConnection() ended ******");
 		return connection;
 	}
+	
+	public boolean sendRequestToVmWare(String apiUrl, String body) throws IOException {
+		log.info("sendRequestToVmWare");
+		boolean status = true;
+		HttpURLConnection connection = VMWareConnection(apiUrl);
+		OutputStream os = connection.getOutputStream();
+		os.write(body.getBytes());
+		os.flush();
+		os.close();
+	    int responseCode = connection.getResponseCode();
+	    if (responseCode == HttpURLConnection.HTTP_OK) { //success
+	        BufferedReader in = new BufferedReader(new InputStreamReader(
+	        		connection.getInputStream()));
+	        String inputLine;
+	        StringBuffer response = new StringBuffer();
+	        while ((inputLine = in .readLine()) != null) {
+	            response.append(inputLine);
+	        } in .close();
+	        // print result
+	        System.out.println(response.toString());
+	    }
+		return status;
+
+	}
 
 	public boolean sendRequestToVmWare(String apiUrl, String body,String msgId) throws IOException {
 		log.info("sendRequestToVmWare");

@@ -4,6 +4,8 @@ import com.rcyc.ship.dto.PMSDataRequest;
 
 public interface PmsDataFetchService {
 
-	void fetchDataFromPms(PMSDataRequest data) throws Exception;
-	
+	void fetchDataFromPmsOld(PMSDataRequest data) throws Exception;
+
+	void fetchDataFromPms(PMSDataRequest request) throws Exception;
+
 }

@@ -35,21 +35,38 @@ public class PmsDataFetchController {
 
 	private final Logger log = LoggerFactory.getLogger(PmsDataFetchController.class);
 
+	@PostMapping(value = "/sendDataOld", consumes = { MediaType.APPLICATION_XML_VALUE, MediaType.TEXT_PLAIN_VALUE,
+			MediaType.TEXT_XML_VALUE })
+	public StatusResponse sendDataOld(@RequestBody String data) {
+		log.info("Start controller getGuestDetail::");
+		try {
+		if (data != null && !data.equals("")) {
+			String messageIdentifier = UUID.randomUUID().toString()
+					+ new SimpleDateFormat("yyyyMMddHHmmssSSS").format(new Date());
+
+			PMSDataRequest request = new PMSDataRequest(data, messageIdentifier);
+			
+			pmsDataFetchService.fetchDataFromPms(request);
+		}
+		log.info("END controller getGuestDetail::");
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+		return new StatusResponse("A", "Success",HttpStatus.SC_OK,null);
+
+	}
+	
 	@PostMapping(value = "/sendData", consumes = { MediaType.APPLICATION_XML_VALUE, MediaType.TEXT_PLAIN_VALUE,
 			MediaType.TEXT_XML_VALUE })
-	public StatusResponse getGuestDetail(@RequestBody String data) {
+	public StatusResponse sendData(@RequestBody String data) {
 		log.info("Start controller getGuestDetail::");
 		try {
 		if (data != null && !data.equals("")) {
 			String messageIdentifier = UUID.randomUUID().toString()
 					+ new SimpleDateFormat("yyyyMMddHHmmssSSS").format(new Date());
 			
-//			AuditLog auditLog = new AuditLog("PMS Data Fetch", "folioTx", "bookingTx", 0,
-//					new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ").format(new Date()), "INFO",
-//					"Data recieved from IBS.", "Controller", messageIdentifier);
-//			this.template.send(Constants.AUDIT_LOG_TOPIC, auditLog);
-			
 			PMSDataRequest request = new PMSDataRequest(data, messageIdentifier);
+			
 			pmsDataFetchService.fetchDataFromPms(request);
 		}
 		log.info("END controller getGuestDetail::");
