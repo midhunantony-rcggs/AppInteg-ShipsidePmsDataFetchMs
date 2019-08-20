@@ -45,22 +45,23 @@ public class PmsDataFetchServiceImpl implements PmsDataFetchService {
 
 	@Autowired
 	VMWareConnection vmWareConnection;
-	
+
 	@Override
 	public void fetchDataFromPmsOld(PMSDataRequest request) throws Exception {
 		System.out.println("request.getData()::");
 
 		log.info("Start Service fetchDateFromPms ::");
+
 		boolean status = jdbcDataFetchingService.insertPmsDataToTable(request.getData());
-		log.info("status ::"+status);
-		
+		log.info("status ::" + status);
+
 		log.info("End Service fetchDateFromPms ::");
 		if (!status) {
 			log.info("Service fetchDateFromPms Error::");
 
 			throw new GeneralException(ExceptionMessages.PMS_DATA_INSERT_FAILURE, 478);
 		} else {
-			 vmWareConnection.sendRequestToVmWare("api/sendRequestToVmWareOld", request.getData());
+			vmWareConnection.sendRequestToVmWare("api/sendRequestToVmWareOld", request.getData());
 
 		}
 	}
@@ -70,60 +71,95 @@ public class PmsDataFetchServiceImpl implements PmsDataFetchService {
 		System.out.println("request.getData()::");
 
 		log.info("Start Service fetchDateFromPms ::");
-		boolean status = jdbcDataFetchingService.insertPmsDataToTable(request.getData());
+		boolean status = true;
+		InputSource is = new InputSource();
+		is.setCharacterStream(new StringReader(request.getData()));
 
-		log.info("End Service fetchDateFromPms ::");
-		if (!status) {
-			log.info("Service fetchDateFromPms Error::");
+		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+		DocumentBuilder db = dbf.newDocumentBuilder();
+		Document doc = db.parse(is);
 
-			throw new GeneralException(ExceptionMessages.PMS_DATA_INSERT_FAILURE, 478);
-		} else {
-			log.info(request.getData());
-			InputSource is = new InputSource();
-			is.setCharacterStream(new StringReader(request.getData()));
+		NodeList newCuriseIdNode = doc.getElementsByTagName("NewCruise");
+		NodeList newBusinessDayNode = doc.getElementsByTagName("NewBusinessDay");
+		if ((newCuriseIdNode != null && newCuriseIdNode.getLength() > 0)
+				|| (newBusinessDayNode != null && newBusinessDayNode.getLength() > 0)) {
+			String messageIdentifier = UUID.randomUUID().toString()
+					+ new SimpleDateFormat("yyyyMMddHHmmssSSS").format(new Date());
+			status = jdbcDataFetchingService.insertPmsDataToTableWithMsgId(request.getData(), messageIdentifier);
+			if (!status) {
+				log.info("Service fetchDateFromPms Error::");
 
-			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-			DocumentBuilder db = dbf.newDocumentBuilder();
-			Document doc = db.parse(is);
-			NodeList nodes = doc.getElementsByTagName("EndDatabaseSwap");
-			if (nodes != null && nodes.getLength() > 0) {
-
-				// An Async task always executes in new thread
+				throw new GeneralException(ExceptionMessages.PMS_DATA_INSERT_FAILURE, 478);
+			} else {
 				new Thread(new Runnable() {
 					public void run() {
-						List<PmsDataModel> startDateSwapList = jdbcDataFetchingService.findLatestStartSwapID();
-						PmsDataModel startDateSwapObj = new PmsDataModel();
-						if (startDateSwapList != null && startDateSwapList.size() > 0) {
-							startDateSwapObj = startDateSwapList.get(0);
-						}
-						if (startDateSwapObj.getId() > 0) {
-							log.info("IFF");
-							String messageIdentifier = UUID.randomUUID().toString()
-									+ new SimpleDateFormat("yyyyMMddHHmmssSSS").format(new Date());
-							List<PmsDataModel> bulkDataList = jdbcDataFetchingService
-									.findLatestBulkDatas(startDateSwapObj.getId());
-							log.info(Integer.toString(startDateSwapObj.getId()));
-							for (PmsDataModel pmsDataModelObj : bulkDataList) {
-								boolean status  = jdbcDataFetchingService.updatePmsDataWithMsgId(messageIdentifier,
-										pmsDataModelObj.getId());
-								log.info(pmsDataModelObj.getData());
-								if (status) {
-									try {
-										vmWareConnection.sendRequestToVmWare("api/sendRequestToVmWare",
-												pmsDataModelObj.getData(), messageIdentifier);
-									} catch (IOException e) {
-										// TODO Auto-generated catch block
-										e.printStackTrace();
-									}
-								} else {
-									throw new GeneralException(ExceptionMessages.PMS_DATA_MSG_ID_UPDATEFAILURE, 478);
-								}
+						try {
+							vmWareConnection.sendRequestToVmWare("api/sendRequestToVmWare",
+									request.getData(), messageIdentifier);
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						} 
 
-							}
-						}
 					}
 				}).start();
+			}
 
+		} else {
+			status = jdbcDataFetchingService.insertPmsDataToTable(request.getData());
+
+			log.info("End Service fetchDateFromPms ::");
+			if (!status) {
+				log.info("Service fetchDateFromPms Error::");
+
+				throw new GeneralException(ExceptionMessages.PMS_DATA_INSERT_FAILURE, 478);
+			} else {
+				log.info(request.getData());
+				NodeList nodes = doc.getElementsByTagName("EndDatabaseSwap");
+				if (nodes != null && nodes.getLength() > 0) {
+
+					// An Async task always executes in new thread
+					new Thread(new Runnable() {
+						public void run() {
+							List<PmsDataModel> startDateSwapList = jdbcDataFetchingService.findLatestStartSwapID();
+							PmsDataModel startDateSwapObj = new PmsDataModel();
+							if (startDateSwapList != null && startDateSwapList.size() > 0) {
+								startDateSwapObj = startDateSwapList.get(0);
+							}
+							if (startDateSwapObj.getId() > 0) {
+								log.info("IFF");
+								String messageIdentifier = UUID.randomUUID().toString()
+										+ new SimpleDateFormat("yyyyMMddHHmmssSSS").format(new Date());
+								List<PmsDataModel> bulkDataList = jdbcDataFetchingService
+										.findLatestBulkDatas(startDateSwapObj.getId());
+								log.info(Integer.toString(startDateSwapObj.getId()));
+								for (PmsDataModel pmsDataModelObj : bulkDataList) {
+									boolean status = jdbcDataFetchingService.updatePmsDataWithMsgId(messageIdentifier,
+											pmsDataModelObj.getId());
+									log.info(pmsDataModelObj.getData());
+									if (status) {
+										try {
+											Thread.sleep(6000);
+											vmWareConnection.sendRequestToVmWare("api/sendRequestToVmWare",
+													pmsDataModelObj.getData(), messageIdentifier);
+										} catch (IOException e) {
+											// TODO Auto-generated catch block
+											e.printStackTrace();
+										} catch (InterruptedException e) {
+											// TODO Auto-generated catch block
+											e.printStackTrace();
+										}
+									} else {
+										throw new GeneralException(ExceptionMessages.PMS_DATA_MSG_ID_UPDATEFAILURE,
+												478);
+									}
+
+								}
+							}
+						}
+					}).start();
+
+				}
 			}
 
 		}
