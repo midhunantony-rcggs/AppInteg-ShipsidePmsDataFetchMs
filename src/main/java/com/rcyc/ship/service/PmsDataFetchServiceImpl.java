@@ -2,6 +2,7 @@ package com.rcyc.ship.service;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -81,6 +82,7 @@ public class PmsDataFetchServiceImpl implements PmsDataFetchService {
 
 		NodeList newCuriseIdNode = doc.getElementsByTagName("NewCruise");
 		NodeList newBusinessDayNode = doc.getElementsByTagName("NewBusinessDay");
+		List<PMSDataRequest> pmsDataRequestList = new ArrayList<>();
 		if ((newCuriseIdNode != null && newCuriseIdNode.getLength() > 0)
 				|| (newBusinessDayNode != null && newBusinessDayNode.getLength() > 0)) {
 			String messageIdentifier = UUID.randomUUID().toString()
@@ -91,15 +93,18 @@ public class PmsDataFetchServiceImpl implements PmsDataFetchService {
 
 				throw new GeneralException(ExceptionMessages.PMS_DATA_INSERT_FAILURE, 478);
 			} else {
+
+				PMSDataRequest pmsDataRequestObj = new PMSDataRequest(request.getData(), messageIdentifier);
+				pmsDataRequestList.add(pmsDataRequestObj);
 				new Thread(new Runnable() {
 					public void run() {
 						try {
-							vmWareConnection.sendRequestToVmWare("api/sendRequestToVmWare",
-									request.getData(), messageIdentifier);
-						} catch (IOException e) {
+							vmWareConnection.sendRequestToVmWare("api/sendRequestToVmWare", pmsDataRequestList,
+									messageIdentifier);
+						} catch (IOException | URISyntaxException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
-						} 
+						}
 
 					}
 				}).start();
@@ -118,44 +123,41 @@ public class PmsDataFetchServiceImpl implements PmsDataFetchService {
 				NodeList nodes = doc.getElementsByTagName("EndDatabaseSwap");
 				if (nodes != null && nodes.getLength() > 0) {
 
-					// An Async task always executes in new thread
+//					// An Async task always executes in new thread
 					new Thread(new Runnable() {
 						public void run() {
+							String messageIdentifier = UUID.randomUUID().toString()
+									+ new SimpleDateFormat("yyyyMMddHHmmssSSS").format(new Date());
 							List<PmsDataModel> startDateSwapList = jdbcDataFetchingService.findLatestStartSwapID();
 							PmsDataModel startDateSwapObj = new PmsDataModel();
 							if (startDateSwapList != null && startDateSwapList.size() > 0) {
 								startDateSwapObj = startDateSwapList.get(0);
 							}
 							if (startDateSwapObj.getId() > 0) {
-								log.info("IFF");
-								String messageIdentifier = UUID.randomUUID().toString()
-										+ new SimpleDateFormat("yyyyMMddHHmmssSSS").format(new Date());
 								List<PmsDataModel> bulkDataList = jdbcDataFetchingService
 										.findLatestBulkDatas(startDateSwapObj.getId());
-								log.info(Integer.toString(startDateSwapObj.getId()));
 								for (PmsDataModel pmsDataModelObj : bulkDataList) {
 									boolean status = jdbcDataFetchingService.updatePmsDataWithMsgId(messageIdentifier,
 											pmsDataModelObj.getId());
-									log.info(pmsDataModelObj.getData());
 									if (status) {
-										try {
-											Thread.sleep(6000);
-											vmWareConnection.sendRequestToVmWare("api/sendRequestToVmWare",
-													pmsDataModelObj.getData(), messageIdentifier);
-										} catch (IOException e) {
-											// TODO Auto-generated catch block
-											e.printStackTrace();
-										} catch (InterruptedException e) {
-											// TODO Auto-generated catch block
-											e.printStackTrace();
-										}
+										PMSDataRequest pmsDataRequestObj = new PMSDataRequest(pmsDataModelObj.getData(),
+												messageIdentifier);
+										pmsDataRequestList.add(pmsDataRequestObj);
 									} else {
 										throw new GeneralException(ExceptionMessages.PMS_DATA_MSG_ID_UPDATEFAILURE,
 												478);
 									}
 
 								}
+								try {
+									vmWareConnection.sendRequestToVmWare("api/sendRequestToVmWare", pmsDataRequestList,
+											messageIdentifier);
+								} catch (IOException | URISyntaxException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
 							}
+
 						}
 					}).start();
 

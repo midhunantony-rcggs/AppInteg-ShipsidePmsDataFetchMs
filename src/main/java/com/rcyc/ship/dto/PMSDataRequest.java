@@ -1,6 +1,8 @@
 package com.rcyc.ship.dto;
 
-public class PMSDataRequest {
+import com.fasterxml.jackson.databind.ser.std.SerializableSerializer;
+
+public class PMSDataRequest extends SerializableSerializer{
 
 	private String data;
 	private String dataType;

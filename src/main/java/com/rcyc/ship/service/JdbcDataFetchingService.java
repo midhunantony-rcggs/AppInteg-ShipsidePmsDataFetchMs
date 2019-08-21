@@ -40,6 +40,21 @@ public class JdbcDataFetchingService {
 		}
 	}
 	
+	public boolean insertPmsDataToTableWithMsgId(Object data,String msgId) {
+		try {
+			log.info("Start insertPmsDataToTable::");
+			SimpleDateFormat normalDateFormat = new SimpleDateFormat(Constants.DATE_TIME_PATTERN_FROM_DB);
+			int status = jdbcTemplate.update(SqlQueries.insertPmsDataToTableWithMsgId, data,msgId,
+					normalDateFormat.format(new Date()));
+			log.info("End insertPmsDataToTable::");
+			return status == 1 ? true : false;
+		} catch (Exception e) {
+			e.printStackTrace();
+			log.info("Error insertPmsDataToTable::");
+			return false;
+		}
+	}
+	
 	public List<PmsDataModel> findLatestStartSwapID() {
 		List<PmsDataModel> diningDetailsModelList=new ArrayList<>();
 		try {
